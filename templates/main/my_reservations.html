@@ -1,0 +1,87 @@
+{% extends "base.html" %}
+
+{% block title %}Rezervasyonlarım{% endblock %}
+
+{% block content %}
+<div class="container">
+    <h1 class="mb-4">Rezervasyonlarım</h1>
+
+    {% if reservations %}
+    <div class="table-responsive">
+        <table class="table table-striped">
+            <thead>
+                <tr>
+                    <th>Rezervasyon No</th>
+                    <th>Oda</th>
+                    <th>Giriş Tarihi</th>
+                    <th>Çıkış Tarihi</th>
+                    <th>Toplam Fiyat</th>
+                    <th>Durum</th>
+                    <th>İşlemler</th>
+                </tr>
+            </thead>
+            <tbody>
+                {% for reservation in reservations %}
+                <tr>
+                    <td>#{{ reservation.id }}</td>
+                    <td>{{ reservation.room.room_type }} - {{ reservation.room.room_number }}</td>
+                    <td>{{ reservation.check_in.strftime('%d.%m.%Y') }}</td>
+                    <td>{{ reservation.check_out.strftime('%d.%m.%Y') }}</td>
+                    <td>{{ "%.2f"|format(reservation.total_price) }} ₺</td>
+                    <td>
+                        {% if reservation.status == 'pending' %}
+                        <span class="badge bg-warning">Beklemede</span>
+                        {% elif reservation.status == 'confirmed' %}
+                        <span class="badge bg-success">Onaylandı</span>
+                        {% elif reservation.status == 'cancelled' %}
+                        <span class="badge bg-danger">İptal Edildi</span>
+                        {% elif reservation.status == 'completed' %}
+                        <span class="badge bg-info">Tamamlandı</span>
+                        {% endif %}
+                    </td>
+                    <td>
+                        <a href="{{ url_for('main.reservation_detail', reservation_id=reservation.id) }}" class="btn btn-sm btn-primary">Detaylar</a>
+                        {% if reservation.status == 'pending' or reservation.status == 'confirmed' %}
+                        <button type="button" class="btn btn-sm btn-danger" data-bs-toggle="modal" data-bs-target="#cancelModal{{ reservation.id }}">
+                            İptal Et
+                        </button>
+                        {% endif %}
+                    </td>
+                </tr>
+
+                <!-- İptal Onay Modalı -->
+                <div class="modal fade" id="cancelModal{{ reservation.id }}" tabindex="-1">
+                    <div class="modal-dialog">
+                        <div class="modal-content">
+                            <div class="modal-header">
+                                <h5 class="modal-title">Rezervasyon İptali</h5>
+                                <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+                            </div>
+                            <div class="modal-body">
+                                <p>Bu rezervasyonu iptal etmek istediğinizden emin misiniz?</p>
+                                <p><strong>Rezervasyon No:</strong> #{{ reservation.id }}</p>
+                                <p><strong>Oda:</strong> {{ reservation.room.room_type }} - {{ reservation.room.room_number }}</p>
+                                <p><strong>Tarihler:</strong> {{ reservation.check_in.strftime('%d.%m.%Y') }} - {{ reservation.check_out.strftime('%d.%m.%Y') }}</p>
+                            </div>
+                            <div class="modal-footer">
+                                <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Vazgeç</button>
+                                <form action="{{ url_for('main.cancel_reservation', reservation_id=reservation.id) }}" method="POST" style="display: inline;">
+                                    <button type="submit" class="btn btn-danger">İptal Et</button>
+                                </form>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+                {% endfor %}
+            </tbody>
+        </table>
+    </div>
+    {% else %}
+    <div class="alert alert-info">
+        Henüz bir rezervasyonunuz bulunmamaktadır. 
+        <a href="{{ url_for('main.index') }}" class="alert-link">Odaları inceleyerek</a> 
+        rezervasyon yapabilirsiniz.
+    </div>
+    {% endif %}
+</div>
+{% endblock %} 

@@ -1,0 +1,144 @@
+{% extends "base.html" %}
+
+{% block title %}Bakım Düzenle{% endblock %}
+
+{% block content %}
+<div class="container-fluid">
+    <div class="row">
+        <div class="col-md-3">
+            <div class="list-group">
+                <a href="{{ url_for('admin.dashboard') }}" class="list-group-item list-group-item-action">
+                    <i class="fas fa-tachometer-alt"></i> Panel
+                </a>
+                <a href="{{ url_for('admin.rooms') }}" class="list-group-item list-group-item-action">
+                    <i class="fas fa-bed"></i> Odalar
+                </a>
+                <a href="{{ url_for('admin.reservations') }}" class="list-group-item list-group-item-action">
+                    <i class="fas fa-calendar-check"></i> Rezervasyonlar
+                </a>
+                <a href="{{ url_for('admin.users') }}" class="list-group-item list-group-item-action">
+                    <i class="fas fa-users"></i> Kullanıcılar
+                </a>
+                <a href="{{ url_for('admin.maintenance') }}" class="list-group-item list-group-item-action active">
+                    <i class="fas fa-tools"></i> Bakım
+                </a>
+                <a href="{{ url_for('admin.reports') }}" class="list-group-item list-group-item-action">
+                    <i class="fas fa-chart-bar"></i> Raporlar
+                </a>
+            </div>
+        </div>
+        
+        <div class="col-md-9">
+            <div class="d-flex justify-content-between align-items-center mb-4">
+                <h1>Bakım Düzenle</h1>
+                <div class="btn-group">
+                    <a href="{{ url_for('admin.maintenance_detail', maintenance_id=maintenance.id) }}" class="btn btn-secondary">
+                        <i class="fas fa-arrow-left"></i> Geri Dön
+                    </a>
+                </div>
+            </div>
+            
+            <div class="card">
+                <div class="card-body">
+                    <form id="maintenanceForm">
+                        <div class="row">
+                            <div class="col-md-6 mb-3">
+                                <label for="room" class="form-label">Oda</label>
+                                <select class="form-select" id="room" name="room_id" required>
+                                    <option value="">Oda Seçin</option>
+                                    {% for room in rooms %}
+                                    <option value="{{ room.id }}" {% if room.id == maintenance.room_id %}selected{% endif %}>
+                                        {{ room.room_number }} - {{ room.room_type }}
+                                    </option>
+                                    {% endfor %}
+                                </select>
+                            </div>
+                            
+                            <div class="col-md-6 mb-3">
+                                <label for="type" class="form-label">Bakım Türü</label>
+                                <select class="form-select" id="type" name="type" required>
+                                    <option value="">Bakım Türü Seçin</option>
+                                    <option value="cleaning" {% if maintenance.type == 'cleaning' %}selected{% endif %}>Temizlik</option>
+                                    <option value="repair" {% if maintenance.type == 'repair' %}selected{% endif %}>Onarım</option>
+                                    <option value="renovation" {% if maintenance.type == 'renovation' %}selected{% endif %}>Yenileme</option>
+                                    <option value="inspection" {% if maintenance.type == 'inspection' %}selected{% endif %}>Kontrol</option>
+                                </select>
+                            </div>
+                            
+                            <div class="col-md-12 mb-3">
+                                <label for="description" class="form-label">Açıklama</label>
+                                <textarea class="form-control" id="description" name="description" rows="3" required>{{ maintenance.description }}</textarea>
+                            </div>
+                            
+                            <div class="col-md-6 mb-3">
+                                <label for="start_date" class="form-label">Başlangıç Tarihi</label>
+                                <input type="date" class="form-control" id="start_date" name="start_date" 
+                                       value="{{ maintenance.start_date.strftime('%Y-%m-%d') }}" required>
+                            </div>
+                            
+                            <div class="col-md-6 mb-3">
+                                <label for="end_date" class="form-label">Bitiş Tarihi</label>
+                                <input type="date" class="form-control" id="end_date" name="end_date" 
+                                       value="{{ maintenance.end_date.strftime('%Y-%m-%d') if maintenance.end_date }}">
+                            </div>
+                            
+                            <div class="col-md-6 mb-3">
+                                <label for="estimated_cost" class="form-label">Tahmini Maliyet</label>
+                                <input type="number" class="form-control" id="estimated_cost" name="estimated_cost" step="0.01"
+                                       value="{{ maintenance.estimated_cost if maintenance.estimated_cost }}">
+                            </div>
+                            
+                            <div class="col-md-6 mb-3">
+                                <label for="cost" class="form-label">Gerçek Maliyet</label>
+                                <input type="number" class="form-control" id="cost" name="cost" step="0.01"
+                                       value="{{ maintenance.cost if maintenance.cost }}">
+                            </div>
+                            
+                            <div class="col-md-12 mb-3">
+                                <label for="notes" class="form-label">Notlar</label>
+                                <textarea class="form-control" id="notes" name="notes" rows="3">{{ maintenance.notes }}</textarea>
+                            </div>
+                            
+                            <div class="col-md-6 mb-3">
+                                <label for="status" class="form-label">Durum</label>
+                                <select class="form-select" id="status" name="status" required>
+                                    <option value="pending" {% if maintenance.status == 'pending' %}selected{% endif %}>Bekliyor</option>
+                                    <option value="in_progress" {% if maintenance.status == 'in_progress' %}selected{% endif %}>Devam Ediyor</option>
+                                    <option value="completed" {% if maintenance.status == 'completed' %}selected{% endif %}>Tamamlandı</option>
+                                    <option value="cancelled" {% if maintenance.status == 'cancelled' %}selected{% endif %}>İptal Edildi</option>
+                                </select>
+                            </div>
+                        </div>
+                        
+                        <div class="text-end mt-4">
+                            <button type="button" class="btn btn-secondary" onclick="history.back()">İptal</button>
+                            <button type="button" class="btn btn-primary" onclick="updateMaintenance()">Kaydet</button>
+                        </div>
+                    </form>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<script>
+function updateMaintenance() {
+    const formData = new FormData(document.getElementById('maintenanceForm'));
+    const data = Object.fromEntries(formData.entries());
+    
+    fetch(`/admin/maintenance/{{ maintenance.id }}/update`, {
+        method: 'POST',
+        headers: {
+            'Content-Type': 'application/json'
+        },
+        body: JSON.stringify(data)
+    }).then(response => {
+        if (response.ok) {
+            window.location.href = "{{ url_for('admin.maintenance_detail', maintenance_id=maintenance.id) }}";
+        } else {
+            alert('Bakım kaydı güncellenirken bir hata oluştu.');
+        }
+    });
+}
+</script>
+{% endblock %} 

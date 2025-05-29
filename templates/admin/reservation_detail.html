@@ -1,0 +1,205 @@
+{% extends "base.html" %}
+
+{% block title %}Rezervasyon Detayı{% endblock %}
+
+{% block content %}
+<div class="container-fluid">
+    <div class="row">
+        <div class="col-md-3">
+            <div class="list-group">
+                <a href="{{ url_for('admin.dashboard') }}" class="list-group-item list-group-item-action">
+                    <i class="fas fa-tachometer-alt"></i> Panel
+                </a>
+                <a href="{{ url_for('admin.rooms') }}" class="list-group-item list-group-item-action">
+                    <i class="fas fa-bed"></i> Odalar
+                </a>
+                <a href="{{ url_for('admin.reservations') }}" class="list-group-item list-group-item-action active">
+                    <i class="fas fa-calendar-check"></i> Rezervasyonlar
+                </a>
+                <a href="{{ url_for('admin.users') }}" class="list-group-item list-group-item-action">
+                    <i class="fas fa-users"></i> Kullanıcılar
+                </a>
+                <a href="{{ url_for('admin.maintenance') }}" class="list-group-item list-group-item-action">
+                    <i class="fas fa-tools"></i> Bakım
+                </a>
+                <a href="{{ url_for('admin.reports') }}" class="list-group-item list-group-item-action">
+                    <i class="fas fa-chart-bar"></i> Raporlar
+                </a>
+            </div>
+        </div>
+        
+        <div class="col-md-9">
+            <div class="d-flex justify-content-between align-items-center mb-4">
+                <h1>Rezervasyon Detayı</h1>
+                <div class="btn-group">
+                    <a href="{{ url_for('admin.reservations') }}" class="btn btn-secondary">
+                        <i class="fas fa-arrow-left"></i> Geri Dön
+                    </a>
+                    {% if reservation.status == 'pending' %}
+                    <button type="button" class="btn btn-success" 
+                            onclick="updateStatus({{ reservation.id }}, 'confirmed')">
+                        <i class="fas fa-check"></i> Onayla
+                    </button>
+                    <button type="button" class="btn btn-danger" 
+                            onclick="updateStatus({{ reservation.id }}, 'cancelled')">
+                        <i class="fas fa-times"></i> İptal Et
+                    </button>
+                    {% endif %}
+                </div>
+            </div>
+            
+            <div class="row">
+                <div class="col-md-6 mb-4">
+                    <div class="card">
+                        <div class="card-header">
+                            <h5 class="card-title mb-0">Rezervasyon Bilgileri</h5>
+                        </div>
+                        <div class="card-body">
+                            <table class="table table-borderless">
+                                <tr>
+                                    <th>Rezervasyon No:</th>
+                                    <td>{{ reservation.id }}</td>
+                                </tr>
+                                <tr>
+                                    <th>Durum:</th>
+                                    <td>
+                                        <span class="badge {% if reservation.status == 'confirmed' %}bg-success
+                                                         {% elif reservation.status == 'pending' %}bg-warning
+                                                         {% elif reservation.status == 'cancelled' %}bg-danger
+                                                         {% else %}bg-info{% endif %}">
+                                            {{ reservation.status }}
+                                        </span>
+                                    </td>
+                                </tr>
+                                <tr>
+                                    <th>Giriş Tarihi:</th>
+                                    <td>{{ reservation.check_in.strftime('%d/%m/%Y') }}</td>
+                                </tr>
+                                <tr>
+                                    <th>Çıkış Tarihi:</th>
+                                    <td>{{ reservation.check_out.strftime('%d/%m/%Y') }}</td>
+                                </tr>
+                                <tr>
+                                    <th>Misafir Sayısı:</th>
+                                    <td>{{ reservation.guests }} Kişi</td>
+                                </tr>
+                                <tr>
+                                    <th>Toplam Tutar:</th>
+                                    <td>₺{{ "%.2f"|format(reservation.total_price) }}</td>
+                                </tr>
+                                <tr>
+                                    <th>Oluşturulma Tarihi:</th>
+                                    <td>{{ reservation.created_at.strftime('%d/%m/%Y %H:%M') }}</td>
+                                </tr>
+                            </table>
+                        </div>
+                    </div>
+                </div>
+                
+                <div class="col-md-6 mb-4">
+                    <div class="card">
+                        <div class="card-header">
+                            <h5 class="card-title mb-0">Müşteri Bilgileri</h5>
+                        </div>
+                        <div class="card-body">
+                            <table class="table table-borderless">
+                                <tr>
+                                    <th>Ad Soyad:</th>
+                                    <td>{{ reservation.user.name }}</td>
+                                </tr>
+                                <tr>
+                                    <th>E-posta:</th>
+                                    <td>{{ reservation.user.email }}</td>
+                                </tr>
+                                <tr>
+                                    <th>Telefon:</th>
+                                    <td>{{ reservation.user.phone or '-' }}</td>
+                                </tr>
+                                <tr>
+                                    <th>Adres:</th>
+                                    <td>{{ reservation.user.address or '-' }}</td>
+                                </tr>
+                            </table>
+                        </div>
+                    </div>
+                </div>
+                
+                <div class="col-md-6 mb-4">
+                    <div class="card">
+                        <div class="card-header">
+                            <h5 class="card-title mb-0">Oda Bilgileri</h5>
+                        </div>
+                        <div class="card-body">
+                            <table class="table table-borderless">
+                                <tr>
+                                    <th>Oda No:</th>
+                                    <td>{{ reservation.room.room_number }}</td>
+                                </tr>
+                                <tr>
+                                    <th>Oda Tipi:</th>
+                                    <td>{{ reservation.room.room_type }}</td>
+                                </tr>
+                                <tr>
+                                    <th>Kapasite:</th>
+                                    <td>{{ reservation.room.capacity }} Kişi</td>
+                                </tr>
+                                <tr>
+                                    <th>Özellikler:</th>
+                                    <td>
+                                        {% if reservation.room.has_balcony %}
+                                        <span class="badge bg-info">Balkon</span>
+                                        {% endif %}
+                                        {% if reservation.room.has_sea_view %}
+                                        <span class="badge bg-info">Deniz Manzarası</span>
+                                        {% endif %}
+                                    </td>
+                                </tr>
+                            </table>
+                        </div>
+                    </div>
+                </div>
+                
+                <div class="col-md-6 mb-4">
+                    <div class="card">
+                        <div class="card-header">
+                            <h5 class="card-title mb-0">Özel İstekler</h5>
+                        </div>
+                        <div class="card-body">
+                            {% if reservation.special_requests %}
+                            <p class="mb-0">{{ reservation.special_requests }}</p>
+                            {% else %}
+                            <p class="text-muted mb-0">Özel istek belirtilmemiş.</p>
+                            {% endif %}
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<script>
+function updateStatus(reservationId, status) {
+    const messages = {
+        'confirmed': 'Bu rezervasyonu onaylamak istediğinizden emin misiniz?',
+        'cancelled': 'Bu rezervasyonu iptal etmek istediğinizden emin misiniz?'
+    };
+    
+    if (confirm(messages[status])) {
+        fetch(`/admin/reservation/${reservationId}/status`, {
+            method: 'POST',
+            headers: {
+                'Content-Type': 'application/x-www-form-urlencoded'
+            },
+            body: `status=${status}`
+        }).then(response => {
+            if (response.ok) {
+                window.location.reload();
+            } else {
+                alert('İşlem sırasında bir hata oluştu.');
+            }
+        });
+    }
+}
+</script>
+{% endblock %} 

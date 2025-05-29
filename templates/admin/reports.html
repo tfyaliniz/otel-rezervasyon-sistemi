@@ -1,0 +1,278 @@
+{% extends "base.html" %}
+
+{% block title %}Raporlar{% endblock %}
+
+{% block content %}
+<div class="container-fluid">
+    <div class="row">
+        <div class="col-md-3">
+            <div class="list-group">
+                <a href="{{ url_for('admin.dashboard') }}" class="list-group-item list-group-item-action">
+                    <i class="fas fa-tachometer-alt"></i> Panel
+                </a>
+                <a href="{{ url_for('admin.rooms') }}" class="list-group-item list-group-item-action">
+                    <i class="fas fa-bed"></i> Odalar
+                </a>
+                <a href="{{ url_for('admin.reservations') }}" class="list-group-item list-group-item-action">
+                    <i class="fas fa-calendar-check"></i> Rezervasyonlar
+                </a>
+                <a href="{{ url_for('admin.users') }}" class="list-group-item list-group-item-action">
+                    <i class="fas fa-users"></i> Kullanıcılar
+                </a>
+                <a href="{{ url_for('admin.maintenance') }}" class="list-group-item list-group-item-action">
+                    <i class="fas fa-tools"></i> Bakım
+                </a>
+                <a href="{{ url_for('admin.reports') }}" class="list-group-item list-group-item-action active">
+                    <i class="fas fa-chart-bar"></i> Raporlar
+                </a>
+            </div>
+        </div>
+        
+        <div class="col-md-9">
+            <h1 class="mb-4">Raporlar</h1>
+            
+            <div class="row mb-4">
+                <div class="col-md-4">
+                    <div class="card bg-primary text-white">
+                        <div class="card-body">
+                            <h5 class="card-title">Toplam Gelir</h5>
+                            <h2 class="mb-0">₺{{ "%.2f"|format(total_revenue) }}</h2>
+                            <small>Son 30 gün</small>
+                        </div>
+                    </div>
+                </div>
+                <div class="col-md-4">
+                    <div class="card bg-success text-white">
+                        <div class="card-body">
+                            <h5 class="card-title">Doluluk Oranı</h5>
+                            <h2 class="mb-0">%{{ "%.1f"|format(occupancy_rate) }}</h2>
+                            <small>Son 30 gün</small>
+                        </div>
+                    </div>
+                </div>
+                <div class="col-md-4">
+                    <div class="card bg-info text-white">
+                        <div class="card-body">
+                            <h5 class="card-title">Ortalama Kalış</h5>
+                            <h2 class="mb-0">{{ avg_stay_duration }} Gün</h2>
+                            <small>Son 30 gün</small>
+                        </div>
+                    </div>
+                </div>
+            </div>
+            
+            <div class="row">
+                <div class="col-md-6 mb-4">
+                    <div class="card">
+                        <div class="card-header d-flex justify-content-between align-items-center">
+                            <h5 class="card-title mb-0">Gelir Grafiği</h5>
+                            <select class="form-select" style="width: auto;" onchange="updateRevenueChart(this.value)">
+                                <option value="30">Son 30 Gün</option>
+                                <option value="90">Son 90 Gün</option>
+                                <option value="180">Son 180 Gün</option>
+                                <option value="365">Son 1 Yıl</option>
+                            </select>
+                        </div>
+                        <div class="card-body">
+                            <canvas id="revenueChart"></canvas>
+                        </div>
+                    </div>
+                </div>
+                
+                <div class="col-md-6 mb-4">
+                    <div class="card">
+                        <div class="card-header d-flex justify-content-between align-items-center">
+                            <h5 class="card-title mb-0">Doluluk Oranı Grafiği</h5>
+                            <select class="form-select" style="width: auto;" onchange="updateOccupancyChart(this.value)">
+                                <option value="30">Son 30 Gün</option>
+                                <option value="90">Son 90 Gün</option>
+                                <option value="180">Son 180 Gün</option>
+                                <option value="365">Son 1 Yıl</option>
+                            </select>
+                        </div>
+                        <div class="card-body">
+                            <canvas id="occupancyChart"></canvas>
+                        </div>
+                    </div>
+                </div>
+                
+                <div class="col-md-6 mb-4">
+                    <div class="card">
+                        <div class="card-header">
+                            <h5 class="card-title mb-0">Oda Tiplerine Göre Gelir Dağılımı</h5>
+                        </div>
+                        <div class="card-body">
+                            <canvas id="roomTypeRevenueChart"></canvas>
+                        </div>
+                    </div>
+                </div>
+                
+                <div class="col-md-6 mb-4">
+                    <div class="card">
+                        <div class="card-header">
+                            <h5 class="card-title mb-0">Rezervasyon Kaynakları</h5>
+                        </div>
+                        <div class="card-body">
+                            <canvas id="bookingSourceChart"></canvas>
+                        </div>
+                    </div>
+                </div>
+            </div>
+            
+            <div class="card mb-4">
+                <div class="card-header">
+                    <h5 class="card-title mb-0">En Çok Tercih Edilen Odalar</h5>
+                </div>
+                <div class="card-body">
+                    <div class="table-responsive">
+                        <table class="table">
+                            <thead>
+                                <tr>
+                                    <th>Oda No</th>
+                                    <th>Oda Tipi</th>
+                                    <th>Toplam Rezervasyon</th>
+                                    <th>Toplam Gelir</th>
+                                    <th>Ortalama Değerlendirme</th>
+                                </tr>
+                            </thead>
+                            <tbody>
+                                {% for room in popular_rooms %}
+                                <tr>
+                                    <td>{{ room.room_number }}</td>
+                                    <td>{{ room.room_type }}</td>
+                                    <td>{{ room.total_bookings }}</td>
+                                    <td>₺{{ "%.2f"|format(room.total_revenue) }}</td>
+                                    <td>
+                                        <div class="d-flex align-items-center">
+                                            <span class="me-2">{{ "%.1f"|format(room.avg_rating) }}</span>
+                                            <div class="text-warning">
+                                                {% for i in range(5) %}
+                                                <i class="fas fa-star{% if i >= room.avg_rating|int %}-half{% endif %}"></i>
+                                                {% endfor %}
+                                            </div>
+                                        </div>
+                                    </td>
+                                </tr>
+                                {% endfor %}
+                            </tbody>
+                        </table>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- Chart.js kütüphanesini ekleyelim -->
+<script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+
+<script>
+// Gelir grafiği
+const revenueCtx = document.getElementById('revenueChart').getContext('2d');
+const revenueChart = new Chart(revenueCtx, {
+    type: 'line',
+    data: {
+        labels: {{ revenue_dates|tojson }},
+        datasets: [{
+            label: 'Günlük Gelir',
+            data: {{ revenue_data|tojson }},
+            borderColor: 'rgb(75, 192, 192)',
+            tension: 0.1
+        }]
+    },
+    options: {
+        responsive: true,
+        scales: {
+            y: {
+                beginAtZero: true
+            }
+        }
+    }
+});
+
+// Doluluk oranı grafiği
+const occupancyCtx = document.getElementById('occupancyChart').getContext('2d');
+const occupancyChart = new Chart(occupancyCtx, {
+    type: 'line',
+    data: {
+        labels: {{ occupancy_dates|tojson }},
+        datasets: [{
+            label: 'Doluluk Oranı (%)',
+            data: {{ occupancy_data|tojson }},
+            borderColor: 'rgb(255, 99, 132)',
+            tension: 0.1
+        }]
+    },
+    options: {
+        responsive: true,
+        scales: {
+            y: {
+                beginAtZero: true,
+                max: 100
+            }
+        }
+    }
+});
+
+// Oda tiplerine göre gelir dağılımı
+const roomTypeRevenueCtx = document.getElementById('roomTypeRevenueChart').getContext('2d');
+const roomTypeRevenueChart = new Chart(roomTypeRevenueCtx, {
+    type: 'pie',
+    data: {
+        labels: {{ room_types|tojson }},
+        datasets: [{
+            data: {{ room_type_revenue|tojson }},
+            backgroundColor: [
+                'rgb(255, 99, 132)',
+                'rgb(54, 162, 235)',
+                'rgb(255, 206, 86)',
+                'rgb(75, 192, 192)'
+            ]
+        }]
+    },
+    options: {
+        responsive: true
+    }
+});
+
+// Rezervasyon kaynakları
+const bookingSourceCtx = document.getElementById('bookingSourceChart').getContext('2d');
+const bookingSourceChart = new Chart(bookingSourceCtx, {
+    type: 'doughnut',
+    data: {
+        labels: {{ booking_sources|tojson }},
+        datasets: [{
+            data: {{ booking_source_data|tojson }},
+            backgroundColor: [
+                'rgb(255, 99, 132)',
+                'rgb(54, 162, 235)',
+                'rgb(255, 206, 86)'
+            ]
+        }]
+    },
+    options: {
+        responsive: true
+    }
+});
+
+function updateRevenueChart(days) {
+    fetch(`/admin/reports/revenue/${days}`)
+        .then(response => response.json())
+        .then(data => {
+            revenueChart.data.labels = data.dates;
+            revenueChart.data.datasets[0].data = data.revenue;
+            revenueChart.update();
+        });
+}
+
+function updateOccupancyChart(days) {
+    fetch(`/admin/reports/occupancy/${days}`)
+        .then(response => response.json())
+        .then(data => {
+            occupancyChart.data.labels = data.dates;
+            occupancyChart.data.datasets[0].data = data.occupancy;
+            occupancyChart.update();
+        });
+}
+</script>
+{% endblock %} 

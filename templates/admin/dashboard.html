@@ -1,0 +1,137 @@
+{% extends "base.html" %}
+
+{% block title %}Admin Paneli{% endblock %}
+
+{% block content %}
+<div class="container-fluid">
+    <div class="row">
+        <div class="col-md-3">
+            <div class="list-group">
+                <a href="{{ url_for('admin.dashboard') }}" class="list-group-item list-group-item-action active">
+                    <i class="fas fa-tachometer-alt"></i> Panel
+                </a>
+                <a href="{{ url_for('admin.rooms') }}" class="list-group-item list-group-item-action">
+                    <i class="fas fa-bed"></i> Odalar
+                </a>
+                <a href="{{ url_for('admin.reservations') }}" class="list-group-item list-group-item-action">
+                    <i class="fas fa-calendar-check"></i> Rezervasyonlar
+                </a>
+                <a href="{{ url_for('admin.users') }}" class="list-group-item list-group-item-action">
+                    <i class="fas fa-users"></i> Kullanıcılar
+                </a>
+                <a href="{{ url_for('admin.maintenance') }}" class="list-group-item list-group-item-action">
+                    <i class="fas fa-tools"></i> Bakım
+                </a>
+                <a href="{{ url_for('admin.reports') }}" class="list-group-item list-group-item-action">
+                    <i class="fas fa-chart-bar"></i> Raporlar
+                </a>
+            </div>
+        </div>
+        
+        <div class="col-md-9">
+            <h1 class="mb-4">Admin Paneli</h1>
+            
+            <div class="row">
+                <div class="col-md-3 mb-4">
+                    <div class="card bg-primary text-white">
+                        <div class="card-body">
+                            <h5 class="card-title">Toplam Oda</h5>
+                            <h2>{{ total_rooms }}</h2>
+                        </div>
+                    </div>
+                </div>
+                
+                <div class="col-md-3 mb-4">
+                    <div class="card bg-success text-white">
+                        <div class="card-body">
+                            <h5 class="card-title">Aktif Rezervasyon</h5>
+                            <h2>{{ active_reservations }}</h2>
+                        </div>
+                    </div>
+                </div>
+                
+                <div class="col-md-3 mb-4">
+                    <div class="card bg-info text-white">
+                        <div class="card-body">
+                            <h5 class="card-title">Toplam Kullanıcı</h5>
+                            <h2>{{ total_users }}</h2>
+                        </div>
+                    </div>
+                </div>
+                
+                <div class="col-md-3 mb-4">
+                    <div class="card bg-warning text-white">
+                        <div class="card-body">
+                            <h5 class="card-title">Toplam Gelir</h5>
+                            <h2>₺{{ "%.2f"|format(total_revenue) }}</h2>
+                        </div>
+                    </div>
+                </div>
+            </div>
+            
+            <div class="row">
+                <div class="col-md-6 mb-4">
+                    <div class="card">
+                        <div class="card-header">
+                            <h5 class="card-title mb-0">Son Rezervasyonlar</h5>
+                        </div>
+                        <div class="card-body">
+                            {% if recent_reservations %}
+                            <div class="list-group">
+                                {% for reservation in recent_reservations %}
+                                <a href="{{ url_for('admin.reservation_detail', reservation_id=reservation.id) }}" 
+                                   class="list-group-item list-group-item-action">
+                                    <div class="d-flex w-100 justify-content-between">
+                                        <h6 class="mb-1">{{ reservation.user.name }}</h6>
+                                        <small>{{ reservation.created_at.strftime('%d/%m/%Y') }}</small>
+                                    </div>
+                                    <p class="mb-1">
+                                        Oda {{ reservation.room.room_number }} - 
+                                        {{ reservation.check_in.strftime('%d/%m/%Y') }} -
+                                        {{ reservation.check_out.strftime('%d/%m/%Y') }}
+                                    </p>
+                                    <small>
+                                        <span class="badge {% if reservation.status == 'confirmed' %}bg-success{% elif reservation.status == 'pending' %}bg-warning{% else %}bg-danger{% endif %}">
+                                            {{ reservation.status }}
+                                        </span>
+                                    </small>
+                                </a>
+                                {% endfor %}
+                            </div>
+                            {% else %}
+                            <p class="text-muted mb-0">Henüz rezervasyon yok.</p>
+                            {% endif %}
+                        </div>
+                    </div>
+                </div>
+                
+                <div class="col-md-6 mb-4">
+                    <div class="card">
+                        <div class="card-header">
+                            <h5 class="card-title mb-0">Bakım Kayıtları</h5>
+                        </div>
+                        <div class="card-body">
+                            {% if maintenance_records %}
+                            <div class="list-group">
+                                {% for record in maintenance_records %}
+                                <div class="list-group-item">
+                                    <div class="d-flex w-100 justify-content-between">
+                                        <h6 class="mb-1">Oda {{ record.room.room_number }}</h6>
+                                        <small>{{ record.created_at.strftime('%d/%m/%Y') }}</small>
+                                    </div>
+                                    <p class="mb-1">{{ record.description }}</p>
+                                    <small>{{ record.maintenance_type }}</small>
+                                </div>
+                                {% endfor %}
+                            </div>
+                            {% else %}
+                            <p class="text-muted mb-0">Bekleyen bakım kaydı yok.</p>
+                            {% endif %}
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %} 

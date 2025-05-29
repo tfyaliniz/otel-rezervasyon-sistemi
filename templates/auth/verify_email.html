@@ -1,0 +1,59 @@
+{% extends "base.html" %}
+
+{% block title %}Email Doğrulama{% endblock %}
+
+{% block content %}
+<div class="container">
+    <div class="row justify-content-center">
+        <div class="col-md-6">
+            <div class="card">
+                <div class="card-header">
+                    <h3 class="text-center">Email Doğrulama</h3>
+                </div>
+                <div class="card-body">
+                    <form method="POST">
+                        <div class="mb-3">
+                            <label for="email" class="form-label">E-posta</label>
+                            <input type="email" class="form-control" id="email" name="email" required>
+                        </div>
+                        <div class="mb-3">
+                            <label for="code" class="form-label">Doğrulama Kodu</label>
+                            <input type="text" class="form-control" id="code" name="code" required>
+                            <small class="text-muted">Email adresinize gönderilen 6 haneli kodu girin.</small>
+                        </div>
+                        <div class="d-grid gap-2">
+                            <button type="submit" class="btn btn-primary">Doğrula</button>
+                            <button type="button" class="btn btn-secondary" onclick="resendCode()">
+                                Yeni Kod Gönder
+                            </button>
+                        </div>
+                    </form>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<script>
+function resendCode() {
+    const email = document.getElementById('email').value;
+    if (!email) {
+        alert('Lütfen email adresinizi girin.');
+        return;
+    }
+    
+    const form = document.createElement('form');
+    form.method = 'POST';
+    form.action = '{{ url_for("auth.resend_verification") }}';
+    
+    const emailInput = document.createElement('input');
+    emailInput.type = 'hidden';
+    emailInput.name = 'email';
+    emailInput.value = email;
+    
+    form.appendChild(emailInput);
+    document.body.appendChild(form);
+    form.submit();
+}
+</script>
+{% endblock %} 

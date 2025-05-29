@@ -1,0 +1,399 @@
+{% extends "base.html" %}
+
+{% block title %}Detaylı Raporlar{% endblock %}
+
+{% block content %}
+<div class="container-fluid">
+    <div class="row">
+        <div class="col-md-3">
+            <div class="list-group">
+                <a href="{{ url_for('admin.dashboard') }}" class="list-group-item list-group-item-action">
+                    <i class="fas fa-tachometer-alt"></i> Panel
+                </a>
+                <a href="{{ url_for('admin.rooms') }}" class="list-group-item list-group-item-action">
+                    <i class="fas fa-bed"></i> Odalar
+                </a>
+                <a href="{{ url_for('admin.reservations') }}" class="list-group-item list-group-item-action">
+                    <i class="fas fa-calendar-check"></i> Rezervasyonlar
+                </a>
+                <a href="{{ url_for('admin.users') }}" class="list-group-item list-group-item-action">
+                    <i class="fas fa-users"></i> Kullanıcılar
+                </a>
+                <a href="{{ url_for('admin.maintenance') }}" class="list-group-item list-group-item-action">
+                    <i class="fas fa-tools"></i> Bakım
+                </a>
+                <a href="{{ url_for('admin.reports') }}" class="list-group-item list-group-item-action active">
+                    <i class="fas fa-chart-bar"></i> Raporlar
+                </a>
+            </div>
+            
+            <!-- Rapor Filtreleri -->
+            <div class="card mt-4">
+                <div class="card-header">
+                    <h5 class="card-title mb-0">Filtreler</h5>
+                </div>
+                <div class="card-body">
+                    <form id="filterForm">
+                        <div class="mb-3">
+                            <label class="form-label">Tarih Aralığı</label>
+                            <div class="input-group">
+                                <input type="date" class="form-control" id="startDate" name="start_date">
+                                <span class="input-group-text">-</span>
+                                <input type="date" class="form-control" id="endDate" name="end_date">
+                            </div>
+                        </div>
+                        
+                        <div class="mb-3">
+                            <label class="form-label">Oda Tipi</label>
+                            <select class="form-select" id="roomType" name="room_type">
+                                <option value="">Tümü</option>
+                                {% for type in room_types %}
+                                <option value="{{ type }}">{{ type }}</option>
+                                {% endfor %}
+                            </select>
+                        </div>
+                        
+                        <div class="mb-3">
+                            <label class="form-label">Rezervasyon Durumu</label>
+                            <select class="form-select" id="bookingStatus" name="booking_status">
+                                <option value="">Tümü</option>
+                                <option value="confirmed">Onaylandı</option>
+                                <option value="pending">Beklemede</option>
+                                <option value="cancelled">İptal Edildi</option>
+                                <option value="completed">Tamamlandı</option>
+                            </select>
+                        </div>
+                        
+                        <button type="button" class="btn btn-primary w-100" onclick="applyFilters()">
+                            Filtreleri Uygula
+                        </button>
+                    </form>
+                </div>
+            </div>
+        </div>
+        
+        <div class="col-md-9">
+            <div class="d-flex justify-content-between align-items-center mb-4">
+                <h1>Detaylı Raporlar</h1>
+                <div class="btn-group">
+                    <button type="button" class="btn btn-success" onclick="exportExcel()">
+                        <i class="fas fa-file-excel"></i> Excel'e Aktar
+                    </button>
+                    <button type="button" class="btn btn-danger" onclick="exportPDF()">
+                        <i class="fas fa-file-pdf"></i> PDF'e Aktar
+                    </button>
+                </div>
+            </div>
+            
+            <!-- Detaylı İstatistikler -->
+            <div class="row mb-4">
+                <div class="col-md-3">
+                    <div class="card">
+                        <div class="card-body">
+                            <h6 class="card-title">Toplam Rezervasyon</h6>
+                            <h3 class="mb-0">{{ total_bookings }}</h3>
+                            <small class="text-muted">Seçili dönem</small>
+                        </div>
+                    </div>
+                </div>
+                <div class="col-md-3">
+                    <div class="card">
+                        <div class="card-body">
+                            <h6 class="card-title">Toplam Gelir</h6>
+                            <h3 class="mb-0">₺{{ "%.2f"|format(total_revenue) }}</h3>
+                            <small class="text-muted">Seçili dönem</small>
+                        </div>
+                    </div>
+                </div>
+                <div class="col-md-3">
+                    <div class="card">
+                        <div class="card-body">
+                            <h6 class="card-title">İptal Oranı</h6>
+                            <h3 class="mb-0">%{{ "%.1f"|format(cancellation_rate) }}</h3>
+                            <small class="text-muted">Seçili dönem</small>
+                        </div>
+                    </div>
+                </div>
+                <div class="col-md-3">
+                    <div class="card">
+                        <div class="card-body">
+                            <h6 class="card-title">Ortalama Değerlendirme</h6>
+                            <h3 class="mb-0">{{ "%.1f"|format(avg_rating) }}/5</h3>
+                            <small class="text-muted">Seçili dönem</small>
+                        </div>
+                    </div>
+                </div>
+            </div>
+            
+            <!-- Detaylı Grafikler -->
+            <div class="row">
+                <div class="col-md-6 mb-4">
+                    <div class="card">
+                        <div class="card-header">
+                            <h5 class="card-title mb-0">Aylık Gelir Trendi</h5>
+                        </div>
+                        <div class="card-body">
+                            <canvas id="monthlyRevenueChart"></canvas>
+                        </div>
+                    </div>
+                </div>
+                
+                <div class="col-md-6 mb-4">
+                    <div class="card">
+                        <div class="card-header">
+                            <h5 class="card-title mb-0">Rezervasyon Durumu Dağılımı</h5>
+                        </div>
+                        <div class="card-body">
+                            <canvas id="bookingStatusChart"></canvas>
+                        </div>
+                    </div>
+                </div>
+                
+                <div class="col-md-6 mb-4">
+                    <div class="card">
+                        <div class="card-header">
+                            <h5 class="card-title mb-0">Müşteri Memnuniyeti Trendi</h5>
+                        </div>
+                        <div class="card-body">
+                            <canvas id="customerSatisfactionChart"></canvas>
+                        </div>
+                    </div>
+                </div>
+                
+                <div class="col-md-6 mb-4">
+                    <div class="card">
+                        <div class="card-header">
+                            <h5 class="card-title mb-0">Sezonluk Doluluk Oranları</h5>
+                        </div>
+                        <div class="card-body">
+                            <canvas id="seasonalOccupancyChart"></canvas>
+                        </div>
+                    </div>
+                </div>
+            </div>
+            
+            <!-- Detaylı Tablo -->
+            <div class="card">
+                <div class="card-header">
+                    <h5 class="card-title mb-0">Detaylı Rezervasyon Raporu</h5>
+                </div>
+                <div class="card-body">
+                    <div class="table-responsive">
+                        <table class="table table-striped">
+                            <thead>
+                                <tr>
+                                    <th>Rezervasyon No</th>
+                                    <th>Müşteri</th>
+                                    <th>Oda</th>
+                                    <th>Giriş - Çıkış</th>
+                                    <th>Süre</th>
+                                    <th>Tutar</th>
+                                    <th>Durum</th>
+                                    <th>Değerlendirme</th>
+                                </tr>
+                            </thead>
+                            <tbody>
+                                {% for booking in bookings %}
+                                <tr>
+                                    <td>{{ booking.id }}</td>
+                                    <td>{{ booking.user.name }}</td>
+                                    <td>{{ booking.room.room_number }} - {{ booking.room.room_type }}</td>
+                                    <td>
+                                        {{ booking.check_in.strftime('%d/%m/%Y') }} -
+                                        {{ booking.check_out.strftime('%d/%m/%Y') }}
+                                    </td>
+                                    <td>{{ booking.duration }} gün</td>
+                                    <td>₺{{ "%.2f"|format(booking.total_price) }}</td>
+                                    <td>
+                                        <span class="badge {% if booking.status == 'confirmed' %}bg-success
+                                                         {% elif booking.status == 'pending' %}bg-warning
+                                                         {% elif booking.status == 'cancelled' %}bg-danger
+                                                         {% else %}bg-info{% endif %}">
+                                            {{ booking.status }}
+                                        </span>
+                                    </td>
+                                    <td>
+                                        {% if booking.rating %}
+                                        <div class="text-warning">
+                                            {% for i in range(5) %}
+                                            <i class="fas fa-star{% if i >= booking.rating|int %}-half{% endif %}"></i>
+                                            {% endfor %}
+                                        </div>
+                                        {% else %}
+                                        -
+                                        {% endif %}
+                                    </td>
+                                </tr>
+                                {% endfor %}
+                            </tbody>
+                        </table>
+                    </div>
+                    
+                    {% if bookings.pages > 1 %}
+                    <nav aria-label="Sayfalama" class="mt-4">
+                        <ul class="pagination justify-content-center">
+                            {% if bookings.has_prev %}
+                            <li class="page-item">
+                                <a class="page-link" href="{{ url_for('admin.detailed_reports', page=bookings.prev_num) }}">
+                                    <i class="fas fa-chevron-left"></i>
+                                </a>
+                            </li>
+                            {% endif %}
+                            
+                            {% for page in bookings.iter_pages() %}
+                                {% if page %}
+                                <li class="page-item {% if page == bookings.page %}active{% endif %}">
+                                    <a class="page-link" href="{{ url_for('admin.detailed_reports', page=page) }}">
+                                        {{ page }}
+                                    </a>
+                                </li>
+                                {% else %}
+                                <li class="page-item disabled">
+                                    <span class="page-link">...</span>
+                                </li>
+                                {% endif %}
+                            {% endfor %}
+                            
+                            {% if bookings.has_next %}
+                            <li class="page-item">
+                                <a class="page-link" href="{{ url_for('admin.detailed_reports', page=bookings.next_num) }}">
+                                    <i class="fas fa-chevron-right"></i>
+                                </a>
+                            </li>
+                            {% endif %}
+                        </ul>
+                    </nav>
+                    {% endif %}
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- Chart.js kütüphanesini ekleyelim -->
+<script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+
+<script>
+// Aylık gelir trendi grafiği
+const monthlyRevenueCtx = document.getElementById('monthlyRevenueChart').getContext('2d');
+const monthlyRevenueChart = new Chart(monthlyRevenueCtx, {
+    type: 'bar',
+    data: {
+        labels: {{ monthly_revenue_dates|tojson }},
+        datasets: [{
+            label: 'Aylık Gelir',
+            data: {{ monthly_revenue_data|tojson }},
+            backgroundColor: 'rgba(75, 192, 192, 0.2)',
+            borderColor: 'rgb(75, 192, 192)',
+            borderWidth: 1
+        }]
+    },
+    options: {
+        responsive: true,
+        scales: {
+            y: {
+                beginAtZero: true
+            }
+        }
+    }
+});
+
+// Rezervasyon durumu dağılımı grafiği
+const bookingStatusCtx = document.getElementById('bookingStatusChart').getContext('2d');
+const bookingStatusChart = new Chart(bookingStatusCtx, {
+    type: 'pie',
+    data: {
+        labels: ['Onaylandı', 'Beklemede', 'İptal Edildi', 'Tamamlandı'],
+        datasets: [{
+            data: {{ booking_status_data|tojson }},
+            backgroundColor: [
+                'rgb(40, 167, 69)',
+                'rgb(255, 193, 7)',
+                'rgb(220, 53, 69)',
+                'rgb(23, 162, 184)'
+            ]
+        }]
+    },
+    options: {
+        responsive: true
+    }
+});
+
+// Müşteri memnuniyeti trendi grafiği
+const customerSatisfactionCtx = document.getElementById('customerSatisfactionChart').getContext('2d');
+const customerSatisfactionChart = new Chart(customerSatisfactionCtx, {
+    type: 'line',
+    data: {
+        labels: {{ satisfaction_dates|tojson }},
+        datasets: [{
+            label: 'Ortalama Değerlendirme',
+            data: {{ satisfaction_data|tojson }},
+            borderColor: 'rgb(255, 159, 64)',
+            tension: 0.1
+        }]
+    },
+    options: {
+        responsive: true,
+        scales: {
+            y: {
+                beginAtZero: true,
+                max: 5
+            }
+        }
+    }
+});
+
+// Sezonluk doluluk oranları grafiği
+const seasonalOccupancyCtx = document.getElementById('seasonalOccupancyChart').getContext('2d');
+const seasonalOccupancyChart = new Chart(seasonalOccupancyCtx, {
+    type: 'bar',
+    data: {
+        labels: ['Kış', 'İlkbahar', 'Yaz', 'Sonbahar'],
+        datasets: [{
+            label: 'Doluluk Oranı (%)',
+            data: {{ seasonal_occupancy_data|tojson }},
+            backgroundColor: [
+                'rgba(54, 162, 235, 0.2)',
+                'rgba(75, 192, 192, 0.2)',
+                'rgba(255, 206, 86, 0.2)',
+                'rgba(255, 99, 132, 0.2)'
+            ],
+            borderColor: [
+                'rgb(54, 162, 235)',
+                'rgb(75, 192, 192)',
+                'rgb(255, 206, 86)',
+                'rgb(255, 99, 132)'
+            ],
+            borderWidth: 1
+        }]
+    },
+    options: {
+        responsive: true,
+        scales: {
+            y: {
+                beginAtZero: true,
+                max: 100
+            }
+        }
+    }
+});
+
+function applyFilters() {
+    const formData = new FormData(document.getElementById('filterForm'));
+    const params = new URLSearchParams(formData);
+    window.location.href = `{{ url_for('admin.detailed_reports') }}?${params.toString()}`;
+}
+
+function exportExcel() {
+    const formData = new FormData(document.getElementById('filterForm'));
+    const params = new URLSearchParams(formData);
+    window.location.href = `{{ url_for('admin.export_report_excel') }}?${params.toString()}`;
+}
+
+function exportPDF() {
+    const formData = new FormData(document.getElementById('filterForm'));
+    const params = new URLSearchParams(formData);
+    window.location.href = `{{ url_for('admin.export_report_pdf') }}?${params.toString()}`;
+}
+</script>
+{% endblock %} 

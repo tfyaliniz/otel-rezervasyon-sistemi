@@ -1,0 +1,18 @@
+{% extends "base.html" %}
+
+{% block title %}Sunucu Hatası{% endblock %}
+
+{% block content %}
+<div class="container text-center py-5">
+    <h1 class="display-1">500</h1>
+    <h2 class="mb-4">Sunucu Hatası</h2>
+    <p class="lead mb-4">Üzgünüz, bir şeyler ters gitti. Lütfen daha sonra tekrar deneyin.</p>
+    <div class="mb-4">
+        <img src="{{ url_for('static', filename='img/500.svg') }}" alt="500 Error" class="img-fluid" style="max-width: 400px;">
+    </div>
+    <div>
+        <a href="{{ url_for('main.index') }}" class="btn btn-primary">Ana Sayfaya Dön</a>
+        <button onclick="history.back()" class="btn btn-outline-secondary">Geri Git</button>
+    </div>
+</div>
+{% endblock %} 

@@ -1,0 +1,47 @@
+{% extends "base.html" %}
+
+{% block title %}Ana Sayfa{% endblock %}
+
+{% block content %}
+<div class="container mt-4">
+    <h1 class="text-center mb-4">Otel Rezervasyon Sistemine Hoş Geldiniz</h1>
+    
+    <div class="row">
+        <div class="col-md-12">
+            <h2 class="mb-3">Öne Çıkan Odalar</h2>
+        </div>
+    </div>
+
+    <div class="row">
+        {% for room in featured_rooms %}
+        <div class="col-md-4 mb-4">
+            <div class="card">
+                {% if room.images %}
+                <img src="{{ url_for('static', filename=room.images[0].image_path) }}" class="card-img-top" alt="{{ room.room_type }}" onerror="this.src='{{ url_for('static', filename='img/rooms/default.jpg') }}'">
+                {% else %}
+                <img src="{{ url_for('static', filename='img/rooms/default.jpg') }}" class="card-img-top" alt="Varsayılan oda görseli">
+                {% endif %}
+                <div class="card-body">
+                    <h5 class="card-title">{{ room.room_type }}</h5>
+                    <p class="card-text">
+                        <i class="fas fa-user"></i> {{ room.capacity }} Kişilik<br>
+                        <i class="fas fa-ruler-combined"></i> {{ room.size }} m²<br>
+                        {% if room.has_balcony %}
+                        <i class="fas fa-door-open"></i> Balkonlu<br>
+                        {% endif %}
+                        {% if room.has_sea_view %}
+                        <i class="fas fa-water"></i> Deniz Manzaralı<br>
+                        {% endif %}
+                        <i class="fas fa-star"></i> {{ "%.1f"|format(room.average_rating) }} ({{ room.reviews|length }} değerlendirme)
+                    </p>
+                    <div class="d-flex justify-content-between align-items-center">
+                        <span class="h5 mb-0">{{ "%.2f"|format(room.price) }} ₺ / gece</span>
+                        <a href="{{ url_for('main.room_detail', room_id=room.id) }}" class="btn btn-primary">Detaylar</a>
+                    </div>
+                </div>
+            </div>
+        </div>
+        {% endfor %}
+    </div>
+</div>
+{% endblock %} 
