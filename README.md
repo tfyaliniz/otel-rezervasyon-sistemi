@@ -115,7 +115,6 @@ Bu proje MIT lisansı altında lisanslanmıştır. Detaylar için [LICENSE](LICE
 ## 📞 İletişim
 
 - Proje Sahibi: Taha Furkan YALINIZ
-- Email: [email@example.com]
 - GitHub: [https://github.com/tfyaliniz](https://github.com/tfyaliniz)
 - LinkedIn: [https://www.linkedin.com/in/tfyaliniz/](https://www.linkedin.com/in/tfyaliniz/)
 
